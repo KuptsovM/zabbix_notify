@@ -1,0 +1,7 @@
+/vendor/
+/var/cache/
+/var/log/
+/var/alerts.json
+/.env
+/.env.local
+/.env.*.local

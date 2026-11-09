@@ -1,0 +1,26 @@
+parameters:
+    env(TELEGRAM_BOT_TOKEN): ''
+    env(TELEGRAM_CHAT_ID): '0'
+    env(TELEGRAM_PROXY): ''
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/Kernel.php'
+            - '../src/Dto/'
+            - '../src/Model/'
+
+    App\Service\AlertRepository:
+        arguments:
+            $storagePath: '%kernel.project_dir%/var/alerts.json'
+
+    App\Service\TelegramNotifier:
+        arguments:
+            $botToken: '%env(TELEGRAM_BOT_TOKEN)%'
+            $chatId: '%env(int:TELEGRAM_CHAT_ID)%'
+            $proxy: '%env(TELEGRAM_PROXY)%'

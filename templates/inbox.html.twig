@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Zabbix · Входящие</title>
+    <style>
+        :root {
+            --bg: #0e141b;
+            --bg-2: #151d27;
+            --line: #243140;
+            --text: #e7eef6;
+            --muted: #8ea0b5;
+            --sent: #3ddc97;
+            --sent-bg: rgba(61, 220, 151, 0.12);
+            --fail: #ff6b6b;
+            --fail-bg: rgba(255, 107, 107, 0.12);
+            --wait: #f5c16c;
+            --wait-bg: rgba(245, 193, 108, 0.12);
+            --accent: #6cb6ff;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", system-ui, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(1200px 500px at 10% -10%, rgba(108, 182, 255, 0.16), transparent 55%),
+                radial-gradient(900px 400px at 100% 0%, rgba(61, 220, 151, 0.08), transparent 50%),
+                var(--bg);
+        }
+        .wrap { max-width: 920px; margin: 0 auto; padding: 32px 20px 64px; }
+        header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-end; margin-bottom: 22px; }
+        .brand { display: flex; gap: 14px; align-items: center; }
+        .mark {
+            width: 42px; height: 42px; border-radius: 12px;
+            display: grid; place-items: center;
+            background: linear-gradient(160deg, #1d4e89, #16324f);
+            border: 1px solid #2c6cb5;
+            font-weight: 700; letter-spacing: 0.04em; color: #d7ebff;
+        }
+        h1 { margin: 0; font-size: 22px; font-weight: 650; }
+        .sub { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+        .stats { display: flex; gap: 8px; flex-wrap: wrap; }
+        .stat {
+            background: var(--bg-2); border: 1px solid var(--line);
+            border-radius: 999px; padding: 6px 12px; font-size: 13px; color: var(--muted);
+        }
+        .stat b { color: var(--text); font-weight: 650; }
+        .list { display: flex; flex-direction: column; gap: 12px; }
+        article {
+            background: rgba(21, 29, 39, 0.92);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 16px 18px 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+        }
+        .top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+        .id { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+        h2 { margin: 2px 0 0; font-size: 16px; font-weight: 650; line-height: 1.35; }
+        .pill {
+            flex: none; border-radius: 999px; padding: 4px 10px;
+            font-size: 12px; font-weight: 650; letter-spacing: 0.02em;
+        }
+        .sent { color: var(--sent); background: var(--sent-bg); }
+        .failed { color: var(--fail); background: var(--fail-bg); }
+        .pending { color: var(--wait); background: var(--wait-bg); }
+        time { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; }
+        pre {
+            margin: 12px 0 0; white-space: pre-wrap; word-break: break-word;
+            font-family: Consolas, "Cascadia Mono", ui-monospace, monospace;
+            font-size: 13px; line-height: 1.5; color: #d5e2ef;
+            background: #0c1218; border-radius: 10px; padding: 12px 14px;
+            border: 1px solid #1c2836;
+        }
+        .empty {
+            border: 1px dashed var(--line); border-radius: 16px;
+            padding: 48px 20px; text-align: center; color: var(--muted);
+            background: rgba(21, 29, 39, 0.55);
+        }
+        .empty strong { display: block; color: var(--text); font-size: 18px; margin-bottom: 6px; }
+        code { color: var(--accent); }
+        footer { margin-top: 22px; color: var(--muted); font-size: 12px; }
+    </style>
+</head>
+<body>
+    {% set sent = 0 %}
+    {% set failed = 0 %}
+    {% for alert in alerts %}
+        {% if alert.status == 'Sent' %}{% set sent = sent + 1 %}
+        {% elseif alert.status starts with 'Failed' %}{% set failed = failed + 1 %}
+        {% endif %}
+    {% endfor %}
+    <div class="wrap">
+        <header>
+            <div class="brand">
+                <div class="mark">ZB</div>
+                <div>
+                    <h1>Входящие</h1>
+                    <p class="sub">Уведомления Zabbix и статус отправки в Telegram</p>
+                </div>
+            </div>
+            <div class="stats">
+                <div class="stat">всего <b>{{ alerts|length }}</b></div>
+                <div class="stat">отправлено <b>{{ sent }}</b></div>
+                <div class="stat">ошибки <b>{{ failed }}</b></div>
+            </div>
+        </header>
+
+        {% if alerts is empty %}
+            <div class="empty">
+                <strong>Пока пусто</strong>
+                Сюда попадут алерты после POST на <code>/webhook/zabbix</code>
+            </div>
+        {% else %}
+            <div class="list">
+                {% for alert in alerts %}
+                    {% set status_class = alert.status == 'Sent' ? 'sent' : (alert.status starts with 'Failed' ? 'failed' : 'pending') %}
+                    {% set label = alert.status == 'Sent' ? 'Отправлено' : (alert.status starts with 'Failed' ? 'Ошибка' : 'Ожидает') %}
+                    <article>
+                        <div class="top">
+                            <div>
+                                <div class="id">#{{ alert.id }}</div>
+                                <h2>{{ alert.subject }}</h2>
+                            </div>
+                            <span class="pill {{ status_class }}" title="{{ alert.status }}">{{ label }}</span>
+                        </div>
+                        <time>{{ alert.receivedAt|date('d.m.Y H:i:s', 'UTC') }} UTC</time>
+                        <pre>{{ alert.message }}</pre>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <footer>Обнови страницу, чтобы увидеть новые события.</footer>
+    </div>
+</body>
+</html>
